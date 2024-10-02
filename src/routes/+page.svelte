@@ -4,17 +4,16 @@
 
 <svelte:head>
 	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<meta name="description" content="CAPE Frontend" />
 </svelte:head>
 
 <section>
 	<!-- <Counter /> -->
 
 	<div class="mt-4">
-		<h1 class="text-4xl font-bold">Submit Pipeline</h1>
-		<Form/>
+		<h1>Submit Pipeline</h1>
+		<Form />
 	</div>
-
 </section>
 
 <style>

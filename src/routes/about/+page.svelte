@@ -4,23 +4,36 @@
 </svelte:head>
 
 <div class="text-column">
-	<h1>About this app</h1>
+	<h1>About CAPE</h1>
 
 	<p>
-		This is a <a href="https://kit.svelte.dev">SvelteKit</a> app. You can make your own by typing the
-		following into your command line and following the prompts:
-	</p>
-
-	<pre>npm create svelte@latest</pre>
-
-	<p>
-		The page you're looking at is purely static HTML, with no client-side interactivity needed.
-		Because of that, we don't need to load any JavaScript. Try viewing the page's source, or opening
-		the devtools network panel and reloading.
+		The Center for Applied Pathogen Epidemiology and Outbreak Control (CAPE) is a cutting-edge
+		initiative addressing both immediate and long-term challenges in public health by providing
+		innovative and scalable solutions. CAPE’s mission is to understand the root causes of infectious
+		disease outbreaks and develop best practices for using pathogen sequencing data to inform public
+		health responses and shape policy.
 	</p>
 
 	<p>
-		The <a href="/sverdle">Sverdle</a> page illustrates SvelteKit's data loading and form handling. Try
-		using it with JavaScript disabled!
+		As a Center of Excellence, CAPE brings together a collaborative network of leaders from public
+		health and academic institutions. The center is led by the Georgia Department of Public Health
+		(GDPH), the University of Georgia (UGA), and the Georgia Tech Research Institute (GTRI), with
+		key leadership from Tonia Parrott (GDPH), Justin Bahl (UGA), and Rebecca Hutchins (GTRI). Since
+		2020, this leadership team has worked to advance comparative genomic methods for outbreak
+		response, establishing CAPE as a trusted network of researchers and public health professionals.
+	</p>
+	<p>
+		CAPE is a multi-site center that unites experts from diverse fields, including researchers from
+		UGA, Augusta University (AU), Georgia State University (GSU), and The University of Texas School
+		of Public Health (UTSPH). GTRI's role ensures that CAPE’s solutions are not only innovative but
+		also operational, building the necessary computational infrastructure to securely handle
+		sensitive data and translate academic research into practical, real-world applications for
+		public health efforts.
 	</p>
 </div>
+
+<style>
+	p {
+		margin-bottom: 1.5em;
+	}
+</style>

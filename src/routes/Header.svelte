@@ -6,7 +6,7 @@
 <header>
 	<div class="corner">
 		<a href="https://github.com/cape-ph">
-			<img src={logo} alt="CAPE" class="h-48"/>
+			<img src={logo} alt="CAPE" class="h-48" />
 		</a>
 	</div>
 
