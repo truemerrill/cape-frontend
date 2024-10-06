@@ -1,27 +1,94 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+
+	const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
 	interface Pipeline {
-		name: string;
-		versions: string[];
+		pipeline_name: string;
+		pipeline_type: string;
+		version: string;
+	}
+
+	/* An array of registered pipelines */
+	let pipelines: Pipeline[] = [];
+	let pipelineOptions: string[] = [];
+
+	/**
+	 * Check if the version string uses semantic versioning
+	 * @param {string} version - the version string
+	 * @returns {boolean} whether the version string uses semantic versioning
+	 */
+	function isSemVer(version: string): boolean {
+		const semverRegex = /^\d+\.\d+\.\d+$/;
+		return semverRegex.test(version);
 	}
 
 	/**
-	 * A static array of registered pipelines.  In the future, this will be
-	 * retrieved through an API endpoint provided by the backend.
+	 * Sort function for two semantic version strings.
+	 * @param {string} a - the first string
+	 * @param {string} b - the second string
 	 */
-	const pipelines: Pipeline[] = [
-		{
-			name: 'Pipeline 1',
-			versions: ['0', '1', '2']
-		},
-		{
-			name: 'Pipeline 2',
-			versions: ['1.0', '1.1']
-		}
-	];
+	function semVerSort(a: string, b: string): number {
+		const [majorA, minorA, patchA] = a.split('.').map(Number);
+		const [majorB, minorB, patchB] = b.split('.').map(Number);
+		return majorA - majorB || minorA - minorB || patchA - patchB;
+	}
 
-	const pipelineOptions = Object.values(pipelines).map((p) => p.name);
+	/**
+	 * Sort pipelines by their version number.
+	 *
+	 * Note: pipeline versions can either be semantic version strings or not.
+	 * 	Versions which follow semantic versioning will always appear *after*
+	 * 	those that do not.  Pipelines that follow semantic versioning will be
+	 * 	sorted by their version number.  Pipelines that do not will be sorted
+	 * 	in alphabetical order.
+	 *
+	 * @param pipelines
+	 */
+	function sortPipelines(pipelines: Pipeline[]): Pipeline[] {
+		const nonSemVer: Pipeline[] = [];
+		const semVer: Pipeline[] = [];
+
+		pipelines.forEach((pipeline) => {
+			if (isSemVer(pipeline.version)) {
+				semVer.push(pipeline);
+			} else {
+				nonSemVer.push(pipeline);
+			}
+		});
+
+		nonSemVer.sort((a, b) => a.version.localeCompare(b.version));
+		semVer.sort((a, b) => semVerSort(a.version, b.version));
+		return [...nonSemVer, ...semVer];
+	}
+
+	/**
+	 * Get the pipelines.
+	 *
+	 * When the component mounts, query the API to retrieve the list of
+	 * pipelines.
+	 */
+	onMount(async () => {
+		const url = `${backendUrl}/analysispipelines`;
+		const response = await fetch(url)
+			.then((response) => {
+				if (!response) {
+					throw new Error(`No response from ${url}`);
+				}
+				if (!response.ok) {
+					throw new Error(response.statusText);
+				}
+				return response;
+			})
+			.catch((error) => console.error(error));
+		if (response) {
+			const payload: Pipeline[] = await response.json();
+			pipelines = sortPipelines(payload);
+			pipelineOptions = Object.values(pipelines).map((p) => p.pipeline_name);
+		}
+	});
+
 	let versionOptions: string[] = [];
 
 	/**
@@ -39,27 +106,31 @@
 	 * @returns {Pipeline | undefined} the pipeline object.
 	 */
 	function getPipeline(name: string): Pipeline | undefined {
-		return pipelines.find((pipeline) => pipeline.name === name);
+		return pipelines.find((pipeline) => pipeline.pipeline_name === name);
 	}
 
 	/**
 	 * Get the most recent version of the pipeline.
 	 *
-	 * @param {Pipeline | undefined} pipeline - the pipeline object.
-	 * @returns {string} the default version.
+	 * @param {string} name - the name of the pipeline.
+	 * @returns {Pipeline | undefined} the pipeline object.
 	 */
-	function getDefaultVersion(pipeline: Pipeline | undefined): string {
-		return pipeline && pipeline.versions.length > 0 ? pipeline.versions.at(-1) || '' : '';
+	function getDefaultPipeline(name: string): Pipeline | undefined {
+		const versions = pipelines.filter((p) => p.pipeline_name === name);
+		return versions.length > 0 ? versions.slice(-1)[0] : undefined;
 	}
 
 	$: {
-		const pipeline = getPipeline(selectedPipeline);
-		selectedVersion = getDefaultVersion(pipeline);
-		versionOptions = pipeline ? pipeline.versions : [];
+		const pipeline = getDefaultPipeline(selectedPipeline);
+		selectedVersion = pipeline ? pipeline.version : '';
+		versionOptions = pipelines
+			.filter((p) => p.pipeline_name == selectedPipeline)
+			.map((p) => p.version);
 	}
 
 	// Handle form submission
 	function handleSubmit() {
+		const url = `${backendUrl}/analysispipeline`;
 		const payload = {
 			pipelineName: selectedPipeline,
 			pipelineVersion: selectedVersion,
@@ -67,9 +138,23 @@
 			outputPath: selectedOutputPath
 		};
 
-		// TODO: Send to API
-		console.log(payload);
-		goto('/submit');
+		// TODO: Turn back on cors
+		fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(payload)
+			// mode: 'no-cors'
+		})
+			.then((response) => {
+				if (response.ok) {
+					goto('/submit');
+				} else {
+					throw new Error(`Response status: ${response.status}`);
+				}
+			})
+			.catch((error) => {
+				console.error(error);
+				alert(error);
+			});
 	}
 </script>
 
@@ -85,9 +170,11 @@
 			class="mt-1 block w-full p-2 border border-gray-300 bg-white rounded-md shadow-sm sm:text-sm"
 			bind:value={selectedPipeline}
 			on:change={() => {
-				const pipeline = getPipeline(selectedPipeline);
-				versionOptions = pipeline ? pipeline.versions : [];
-				selectedVersion = getDefaultVersion(pipeline);
+				const pipeline = getDefaultPipeline(selectedPipeline);
+				selectedVersion = pipeline ? pipeline.version : '';
+				versionOptions = pipelines
+					.filter((p) => p.pipeline_name == selectedPipeline)
+					.map((p) => p.version);
 			}}
 		>
 			{#each pipelineOptions as option}
